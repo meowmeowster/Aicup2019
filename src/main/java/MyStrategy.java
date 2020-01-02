@@ -96,10 +96,6 @@ public class MyStrategy {
 			action.setVelocity((targetPos.getX() - unit.getPosition().getX()));
 		}
 
-		if (Math.abs(targetPos.getY() - unit.getPosition().getY()) > 8)
-		{double gct = (double)game.getCurrentTick();
-			action.setVelocity((double) Math.sin(gct/(2*Math.sqrt(gct/4)))*100);
-		}
 
 
 		action.setJump(jump);
@@ -143,7 +139,7 @@ public class MyStrategy {
 
 		if (!(unit.getWeapon() == null)) {
 			if (unit.getWeapon().getTyp().equals(WeaponType.ROCKET_LAUNCHER) &&
-					(t1 == Tile.WALL || t1 == Tile.JUMP_PAD) || t1 == Tile.PLATFORM) {
+					(t1 == Tile.WALL)) {
 				return false;
 			}
 		}
@@ -151,12 +147,17 @@ public class MyStrategy {
 	}
 
 	public boolean goodaim(Game game, Unit unit, Unit nearestEnemy, Vec2Double aim, UnitAction action) {
-		if (Math.sqrt((Math.pow(aim.getX(), 2) + Math.pow(aim.getY(), 2))) < 4) {
-			return true;
-		}
+		//if (Math.sqrt((Math.pow(aim.getX(), 2) + Math.pow(aim.getY(), 2))) < 1 && unit.getWeapon()!=null) {
+//			if (!unit.getWeapon().getTyp().equals(WeaponType.ROCKET_LAUNCHER)){
+//				return false;
+//			}
+		//	action.setJump(true);
+			//return true;
+		//}
 		try {
-			return drawBresenhamLine((int) unit.getPosition().getX(), (int) nearestEnemy.getPosition().getX(),
-					(int) unit.getPosition().getY(), (int) nearestEnemy.getPosition().getY(), game, unit, nearestEnemy, action);
+			return drawBresenhamLine((int) unit.getPosition().getX(), (int) unit.getPosition().getY(),
+					(int) nearestEnemy.getPosition().getX(), (int) nearestEnemy.getPosition().getY(),
+					game, unit, nearestEnemy, action);
 		} catch (Exception e) {
 			return true;
 		}
@@ -221,16 +222,20 @@ public class MyStrategy {
 		y = ystart;
 		err = el / 2;
 		//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!g.drawLine (x, y, x, y);//ставим первую точку
-		if (game.getLevel().getTiles()[x][y] == Tile.WALL || (unit.getWeapon().getTyp().equals(WeaponType.ROCKET_LAUNCHER) && (game.getLevel().getTiles()[x][y] == Tile.JUMP_PAD || game.getLevel().getTiles()[x][y] == Tile.PLATFORM))) {
+		if (game.getLevel().getTiles()[x][y] == Tile.WALL) {
 			return false;
 		}
 		for (Unit other : game.getUnits()) {
-			if (other.getPlayerId() == unit.getPlayerId()) {
-				if (Math.abs((int) other.getPosition().getX() - x) <= 2 && Math.abs((int) other.getPosition().getY() - y) <= 2 &&
-						(sign((int) nearestEnemy.getPosition().getX() - x) == sign((int) other.getPosition().getX() - x) ||
-								sign((int) nearestEnemy.getPosition().getY() - y) == sign((int) other.getPosition().getY() - y)))  {
+			if (other.getPlayerId() == unit.getPlayerId() && !other.equals(unit)) {
+				//if (Math.abs((int) other.getPosition().getX() - x) <= 2 && Math.abs((int) other.getPosition().getY() - y) <= 2 &&
+				//		(sign((int) nearestEnemy.getPosition().getX() - x) == sign((int) other.getPosition().getX() - x) ||
+				//				sign((int) nearestEnemy.getPosition().getY() - y) == sign((int) other.getPosition().getY() - y)))  {
+				//	action.setJump(true);
+				//	return false;
+				//	}
+				if ((int) other.getPosition().getX() == x && (int) other.getPosition().getY() == y){
 					action.setJump(true);
-					return false;
+					//return false;
 				}
 			}
 		}
@@ -247,16 +252,20 @@ public class MyStrategy {
 				x += pdx;//продолжить тянуть прямую дальше, т.е. сдвинуть влево или вправо, если
 				y += pdy;//цикл идёт по иксу; сдвинуть вверх или вниз, если по y
 			}
-			if (game.getLevel().getTiles()[x][y] == Tile.WALL || (unit.getWeapon().getTyp().equals(WeaponType.ROCKET_LAUNCHER) && (game.getLevel().getTiles()[x][y] == Tile.JUMP_PAD || game.getLevel().getTiles()[x][y] == Tile.PLATFORM))) {
+			if (game.getLevel().getTiles()[x][y] == Tile.WALL) {
 				return false;
 			}
 			for (Unit other : game.getUnits()) {
-				if (other.getPlayerId() == unit.getPlayerId()) {
-					if (Math.abs((int) other.getPosition().getX() - x) <= 2 && Math.abs((int) other.getPosition().getY() - y) <= 2 &&
-							(sign((int) nearestEnemy.getPosition().getX() - x) == sign((int) other.getPosition().getX() - x) ||
-									sign((int) nearestEnemy.getPosition().getY() - y) == sign((int) other.getPosition().getY() - y)))  {
+				if (other.getPlayerId() == unit.getPlayerId() && !other.equals(unit)) {
+					//if (Math.abs((int) other.getPosition().getX() - x) <= 2 && Math.abs((int) other.getPosition().getY() - y) <= 2 &&
+					//		(sign((int) nearestEnemy.getPosition().getX() - x) == sign((int) other.getPosition().getX() - x) ||
+					//				sign((int) nearestEnemy.getPosition().getY() - y) == sign((int) other.getPosition().getY() - y)))  {
+					//	action.setJump(true);
+					//	return false;
+				//	}
+					if ((int) other.getPosition().getX() == x && (int) other.getPosition().getY() == y){
 						action.setJump(true);
-						return false;
+						//return false;
 					}
 				}
 			}
