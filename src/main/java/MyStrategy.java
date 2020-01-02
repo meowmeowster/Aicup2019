@@ -50,9 +50,7 @@ public class MyStrategy {
 			}
 		}
 
-		if (unit.getWeapon() != null && nearestHealthpack != null && unit.getHealth() < 100) {
-			targetPos = nearestHealthpack.getPosition();
-		}
+
 		//debug.draw(new CustomData.Log("Target pos: " + targetPos));
 		Vec2Double aim = new Vec2Double(0, 0);
 		if (nearestEnemy != null) {
@@ -65,6 +63,9 @@ public class MyStrategy {
 
 		UnitAction action = new UnitAction();
 
+		if (unit.getWeapon() != null && nearestHealthpack != null && (unit.getHealth() < 100 || ((unit.getWeapon().getTyp().equals(WeaponType.ROCKET_LAUNCHER) && goodaim(game, unit, nearestEnemy, aim, action))))) {
+			targetPos = nearestHealthpack.getPosition();
+		}
 
 		boolean jump = (targetPos.getY() > unit.getPosition().getY());
 		if (targetPos.getX() > unit.getPosition().getX() && game.getLevel()
