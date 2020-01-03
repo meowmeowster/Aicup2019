@@ -52,6 +52,7 @@ public class MyStrategy {
 			}
 		}
 
+		boolean jump = (targetPos.getY() > unit.getPosition().getY());
 
 		//debug.draw(new CustomData.Log("Target pos: " + targetPos));
 		Vec2Double aim = new Vec2Double(0, 0);
@@ -71,9 +72,12 @@ public class MyStrategy {
 				)
 		{
 			targetPos = nearestHealthpack.getPosition();
+			if (nearestEnemy == null) {
+				jump = true;
+			}
 		}
 
-		boolean jump = (targetPos.getY() > unit.getPosition().getY());
+
 		if (targetPos.getX() > unit.getPosition().getX() && game.getLevel()
 				.getTiles()[(int) (unit.getPosition().getX() + 1)][(int) (unit.getPosition().getY())] == Tile.WALL) {
 			jump = true;
@@ -100,7 +104,7 @@ public class MyStrategy {
 				action.setVelocity((unit.getPosition().getX() - nearestEnemy.getPosition().getX()) * 100);
 			}
 		} else {
-			action.setVelocity((targetPos.getX() - unit.getPosition().getX()));
+			action.setVelocity((targetPos.getX() - unit.getPosition().getX()) * 100);
 		}
 
 
