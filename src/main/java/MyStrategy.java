@@ -10,7 +10,11 @@ public class MyStrategy {
 		UnitAction action = new UnitAction();
 
 		Unit nearestEnemy = null;
+		Unit friend = null;
 		for (Unit other : game.getUnits()) {
+			if (other.getPlayerId() == unit.getPlayerId() && !other.equals(unit)) {
+				friend = other;
+			}
 			if (other.getPlayerId() != unit.getPlayerId() && goodaim(game, unit, other, action)) {
 				if (nearestEnemy == null || distanceSqr(unit.getPosition(),
 						other.getPosition()) < distanceSqr(unit.getPosition(), nearestEnemy.getPosition())) {
@@ -68,7 +72,7 @@ public class MyStrategy {
 					(nearestEnemy == null) ||
 					(unit.getHealth() < 100 && !unit.getWeapon().getTyp().equals(WeaponType.ASSAULT_RIFLE)) ||
 					(unit.getWeapon().getTyp().equals(WeaponType.ROCKET_LAUNCHER) && goodaim(game, unit, nearestEnemy, action)) ||
-					(unit.getHealth() <= nearestEnemy.getHealth() && unit.getWeapon().getTyp().equals(WeaponType.ASSAULT_RIFLE)))
+					(unit.getHealth() < 100 && unit.getHealth() <= nearestEnemy.getHealth()*1.2 && unit.getWeapon().getTyp().equals(WeaponType.ASSAULT_RIFLE)))
 				)
 		{
 			targetPos = nearestHealthpack.getPosition();
@@ -78,8 +82,11 @@ public class MyStrategy {
 		}
 
 
-		if (targetPos.getX() > unit.getPosition().getX() && game.getLevel()
-				.getTiles()[(int) (unit.getPosition().getX() + 1)][(int) (unit.getPosition().getY())] == Tile.WALL) {
+		if ((targetPos.getX() > unit.getPosition().getX() && game.getLevel()
+				.getTiles()[(int) (unit.getPosition().getX() + 1)][(int) (unit.getPosition().getY())] == Tile.WALL) ||
+				(nearestEnemy != null && friend != null &&
+						unit.getPosition().getX() > friend.getPosition().getX() && nearestEnemy.getPosition().getX() > unit.getPosition().getX())
+		) {
 			jump = true;
 			//if (nearestEnemy != null && game.getLevel()
 			//		.getTiles()[(int) (unit.getPosition().getX() + 1)][(int) (unit.getPosition().getY()-10)] == Tile.WALL)
@@ -87,8 +94,11 @@ public class MyStrategy {
 
 			//}
 		}
-		if (targetPos.getX() < unit.getPosition().getX() && game.getLevel()
-				.getTiles()[(int) (unit.getPosition().getX() - 1)][(int) (unit.getPosition().getY())] == Tile.WALL) {
+		if ((targetPos.getX() < unit.getPosition().getX() && game.getLevel()
+				.getTiles()[(int) (unit.getPosition().getX() - 1)][(int) (unit.getPosition().getY())] == Tile.WALL) ||
+				(nearestEnemy != null && friend != null &&
+				unit.getPosition().getX() < friend.getPosition().getX() && nearestEnemy.getPosition().getX() < unit.getPosition().getX())
+		) {
 			jump = true;
 			//if (nearestEnemy != null && game.getLevel()
 			//		.getTiles()[(int) (unit.getPosition().getX() - 1)][(int) (unit.getPosition().getY()-10)] == Tile.WALL)
@@ -279,8 +289,8 @@ public class MyStrategy {
 					//	return false;
 					//	}
 					if ((int) other.getPosition().getX() == x && (int) other.getPosition().getY() == y) {
-						action.setJump(true);
-						//return false;
+						//action.setJump(true);
+						return false;
 					}
 				}
 			}
