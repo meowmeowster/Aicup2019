@@ -6,9 +6,12 @@ public class MyStrategy {
 	}
 
 	public UnitAction getAction(Unit unit, Game game, Debug debug) {
+
+		UnitAction action = new UnitAction();
+
 		Unit nearestEnemy = null;
 		for (Unit other : game.getUnits()) {
-			if (other.getPlayerId() != unit.getPlayerId()) {
+			if (other.getPlayerId() != unit.getPlayerId() && goodaim(game, unit, other, action)) {
 				if (nearestEnemy == null || distanceSqr(unit.getPosition(),
 						other.getPosition()) < distanceSqr(unit.getPosition(), nearestEnemy.getPosition())) {
 					nearestEnemy = other;
@@ -39,12 +42,11 @@ public class MyStrategy {
 		}
 
 
-		if (targetPos.getY() < unit.getPosition().getY() - 10)
-		{
+		if (targetPos.getY() < unit.getPosition().getY() - 10) {
 
 			Vec2Double newpos = drawBresenhamLineSimple(
 					(int) unit.getPosition().getX(), (int) unit.getPosition().getY(),
-					((int) unit.getPosition().getX()-10*sign((int) unit.getPosition().getX() - (int) targetPos.getX())), (int) unit.getPosition().getY(), 1, game);
+					((int) unit.getPosition().getX() - 10 * sign((int) unit.getPosition().getX() - (int) targetPos.getX())), (int) unit.getPosition().getY(), 1, game);
 			if (newpos != null) {
 				targetPos = newpos;
 			}
@@ -56,14 +58,18 @@ public class MyStrategy {
 		if (nearestEnemy != null) {
 			aim = new Vec2Double(nearestEnemy.getPosition().getX() - unit.getPosition().getX(),
 					nearestEnemy.getPosition().getY() - unit.getPosition().getY());
-
 			//debug.draw(new CustomData.Log("aim X: " + aim.getX()));
 			//debug.draw(new CustomData.Log("aim Y: " + aim.getY()));
 		}
 
-		UnitAction action = new UnitAction();
-
-		if (unit.getWeapon() != null && nearestHealthpack != null && (unit.getHealth() < 100 || ((unit.getWeapon().getTyp().equals(WeaponType.ROCKET_LAUNCHER) && goodaim(game, unit, nearestEnemy, aim, action))))) {
+		if 	(unit.getWeapon() != null && nearestHealthpack != null &&
+				(
+					(nearestEnemy == null) ||
+					(unit.getHealth() < 100 && !unit.getWeapon().getTyp().equals(WeaponType.ASSAULT_RIFLE)) ||
+					(unit.getWeapon().getTyp().equals(WeaponType.ROCKET_LAUNCHER) && goodaim(game, unit, nearestEnemy, action)) ||
+					(unit.getHealth() <= nearestEnemy.getHealth() && unit.getWeapon().getTyp().equals(WeaponType.ASSAULT_RIFLE)))
+				)
+		{
 			targetPos = nearestHealthpack.getPosition();
 		}
 
@@ -98,13 +104,12 @@ public class MyStrategy {
 		}
 
 
-
 		action.setJump(jump);
 		action.setJumpDown(!jump);
 
 		action.setAim(aim);
 		//if (nearestEnemy != null && avoidwalls(game, unit) && bazookashotrule(unit, nearestEnemy)) {
-		if (nearestEnemy != null && avoidwalls(game, unit, aim) && goodaim(game, unit, nearestEnemy, aim, action)) {
+		if (nearestEnemy != null && avoidwalls(game, unit, aim) && goodaim(game, unit, nearestEnemy, action)) {
 			action.setShoot(true);
 		} else {
 			action.setShoot(false);
@@ -117,7 +122,7 @@ public class MyStrategy {
 
 	public boolean bazookashotrule(Unit unit, Vec2Double aim, Game game, Unit nearestEnemy, UnitAction action) {
 		if (!(unit.getWeapon() == null)) {
-			if (unit.getWeapon().getTyp().equals(WeaponType.ROCKET_LAUNCHER) && goodaim(game, unit, nearestEnemy, aim, action)) {
+			if (unit.getWeapon().getTyp().equals(WeaponType.ROCKET_LAUNCHER) && goodaim(game, unit, nearestEnemy, action)) {
 				return false;
 			}
 		}
@@ -147,18 +152,18 @@ public class MyStrategy {
 		return true;
 	}
 
-	public boolean goodaim(Game game, Unit unit, Unit nearestEnemy, Vec2Double aim, UnitAction action) {
+	public boolean goodaim(Game game, Unit unit, Unit nearestEnemy, UnitAction action) {
 		//if (Math.sqrt((Math.pow(aim.getX(), 2) + Math.pow(aim.getY(), 2))) < 1 && unit.getWeapon()!=null) {
 //			if (!unit.getWeapon().getTyp().equals(WeaponType.ROCKET_LAUNCHER)){
 //				return false;
 //			}
 		//	action.setJump(true);
-			//return true;
+		//return true;
 		//}
 		try {
 			return drawBresenhamLine((int) unit.getPosition().getX(), (int) unit.getPosition().getY(),
 					(int) nearestEnemy.getPosition().getX(), (int) nearestEnemy.getPosition().getY(),
-					game, unit, nearestEnemy, action);
+					game, unit, action);
 		} catch (Exception e) {
 			return true;
 		}
@@ -169,7 +174,7 @@ public class MyStrategy {
 		//возвращает 0, если аргумент (x) равен нулю; -1, если x < 0 и 1, если x > 0.
 	}
 
-	public boolean drawBresenhamLine(int xstart, int ystart, int xend, int yend, Game game, Unit unit, Unit nearestEnemy, UnitAction action)
+	public boolean drawBresenhamLine(int xstart, int ystart, int xend, int yend, Game game, Unit unit, UnitAction action)
 	/**
 	 * xstart, ystart - начало;
 	 * xend, yend - конец;
@@ -234,7 +239,7 @@ public class MyStrategy {
 				//	action.setJump(true);
 				//	return false;
 				//	}
-				if ((int) other.getPosition().getX() == x && (int) other.getPosition().getY() == y){
+				if ((int) other.getPosition().getX() == x && (int) other.getPosition().getY() == y) {
 					action.setJump(true);
 					//return false;
 				}
@@ -254,7 +259,12 @@ public class MyStrategy {
 				y += pdy;//цикл идёт по иксу; сдвинуть вверх или вниз, если по y
 			}
 			if (game.getLevel().getTiles()[x][y] == Tile.WALL) {
-				return false;
+				if (unit.getWeapon() != null && unit.getWeapon().getTyp().equals(WeaponType.ROCKET_LAUNCHER) && Math.abs(xend - x) < 2 && Math.abs(yend - y) < 2
+						&& Math.sqrt(Math.pow(xstart - x, 2) + Math.pow(ystart - y, 2)) > unit.getWeapon().getParams().getExplosion().getRadius()) {
+					// do nothing
+				} else {
+					return false;
+				}
 			}
 			for (Unit other : game.getUnits()) {
 				if (other.getPlayerId() == unit.getPlayerId() && !other.equals(unit)) {
@@ -263,8 +273,8 @@ public class MyStrategy {
 					//				sign((int) nearestEnemy.getPosition().getY() - y) == sign((int) other.getPosition().getY() - y)))  {
 					//	action.setJump(true);
 					//	return false;
-				//	}
-					if ((int) other.getPosition().getX() == x && (int) other.getPosition().getY() == y){
+					//	}
+					if ((int) other.getPosition().getX() == x && (int) other.getPosition().getY() == y) {
 						action.setJump(true);
 						//return false;
 					}
@@ -331,7 +341,7 @@ public class MyStrategy {
 		err = el / 2;
 		//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!g.drawLine (x, y, x, y);//ставим первую
 		if (condition == 1) {
-			if (game.getLevel().getTiles()[x][y]==Tile.LADDER || game.getLevel().getTiles()[x][y]==Tile.PLATFORM){
+			if (game.getLevel().getTiles()[x][y] == Tile.LADDER || game.getLevel().getTiles()[x][y] == Tile.PLATFORM) {
 				Vec2Double newpos = new Vec2Double();
 				newpos.setX(x);
 				newpos.setY(y);
