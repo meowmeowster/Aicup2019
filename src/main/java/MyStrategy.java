@@ -75,6 +75,7 @@ public class MyStrategy {
 			}
 		}
 		boolean jump = (targetPos.getY() > unit.getPosition().getY() && Math.sin((double) game.getCurrentTick() / 3) != 0);
+		boolean jumpdown = !jump;
 		Vec2Double aim = new Vec2Double(0, 0);
 		if (nearestEnemy != null) {
 			aim = new Vec2Double(nearestEnemy.getPosition().getX() - unit.getPosition().getX(),
@@ -84,8 +85,7 @@ public class MyStrategy {
 				(
 						(nearestEnemy == null) ||
 								(unit.getHealth() < 100) ||
-								(unit.getWeapon().getTyp().equals(WeaponType.ROCKET_LAUNCHER) && goodaim(game, unit, nearestEnemy, action))))
-		{
+								(unit.getWeapon().getTyp().equals(WeaponType.ROCKET_LAUNCHER) && goodaim(game, unit, nearestEnemy, action)))) {
 			targetPos = nearestHealthpack.getPosition();
 			if (nearestEnemy == null && friend != null && distanceSqr(unit.getPosition(), friend.getPosition()) < Math.pow(game.getProperties().getMineExplosionParams().getRadius(), 3)) {
 				jump = true;
@@ -140,10 +140,10 @@ public class MyStrategy {
 			}
 		}
 		if (alien.getScore() <= enemy.getScore()) {
-			if (game.getCurrentTick() >= (900 - (unitprops / 1.3)) && nearestItem != null && nearestEnemy == null) {
+			if (game.getCurrentTick() >= (350 - (unitprops / 1.3)) && nearestItem != null && nearestEnemy == null) {
 				targetPos = nearestItem.getPosition();
 			}
-			if (game.getCurrentTick() >= (1500 - (unitprops)) && (game.getCurrentTick() < 3600 && !(unit.getWeapon() != null && nearestEnemy != null))) {
+			if (game.getCurrentTick() >= (450 - (unitprops)) && (game.getCurrentTick() < 3600 && !(unit.getWeapon() != null && nearestEnemy != null))) {
 				Vec2Double pos = new Vec2Double();
 				try {
 					double posX = 20 + (Math.sin((double) (game.getCurrentTick() + unitprops) / (33 + (double) game.getCurrentTick() / 253))) * 19;
@@ -161,6 +161,11 @@ public class MyStrategy {
 					}
 					pos.setY(posY);
 					targetPos = pos;
+
+					if (unit.getHealth() < 100 && nearestHealthpack != null && easyToGo(unit.getPosition(), nearestHealthpack.getPosition(), game)
+							&& distanceSqr(unit.getPosition(), nearestHealthpack.getPosition()) < 25) {
+						targetPos = nearestHealthpack.getPosition();
+					}
 
 					if (unit.getWeapon() == null && nearestWeapon != null && easyToGo(unit.getPosition(), nearestWeapon.getPosition(), game)
 							&& distanceSqr(unit.getPosition(), nearestWeapon.getPosition()) < 25) {
@@ -235,11 +240,11 @@ public class MyStrategy {
 					action.setVelocity(100);
 				}
 				if (fr1.getPosition().getY() > en1.getPosition().getY()) {
-					action.setJumpDown(true);
-					action.setJump(false);
+					jump = false;
+					jumpdown = true;
 				} else {
-					action.setJumpDown(false);
-					action.setJump(true);
+					jump = true;
+					jumpdown = false;
 				}
 				if (game.getUnits().length > 2) {
 					if (fr2.getPosition().getX() > 40 - en2.getPosition().getX()) {
@@ -248,15 +253,21 @@ public class MyStrategy {
 						action.setVelocity(100);
 					}
 					if (fr2.getPosition().getY() > en2.getPosition().getY()) {
-						action.setJumpDown(true);
-						action.setJump(false);
+						jump = false;
+						jumpdown = true;
 					} else {
-						action.setJumpDown(false);
-						action.setJump(true);
+						jump = true;
+						jumpdown = false;
 					}
 				}
 			}
 		} catch (Exception e) {
+		}
+
+		if (game.getLevel().getTiles()[(int) (unit.getPosition().getX())][(int) (unit.getPosition().getY() - 1)] == Tile.PLATFORM &&
+				unit.getJumpState().getMaxTime() < 0.3) {
+			jump = false;
+			jumpdown = false;
 		}
 		if (nearestEnemy != null && easyToGo(unit.getPosition(), nearestEnemy.getPosition(), game) && unit.getHealth() >= 90 &&
 				unit.getWeapon() != null && (unit.getMines() > 1 || (unit.getMines() > 0 && unit.getWeapon().getTyp().equals(WeaponType.ROCKET_LAUNCHER)))) {
@@ -272,23 +283,26 @@ public class MyStrategy {
 		if (unit.getMines() > 0 && nearestEnemy != null &&
 				distanceSqr(unit.getPosition(), nearestEnemy.getPosition()) < Math.pow(game.getProperties().getMineExplosionParams().getRadius(), 2)) {
 			jump = false;
+			jumpdown = false;
 			action.setPlantMine(true);
 		}
-		action.setJump(jump);
-		action.setJumpDown(!jump);
-		action.setAim(aim);
+
 		try {
 			if (game.getMines().length > 0 && unit.getWeapon() != null
 					&& closeEnemy != null && distanceSqr(game.getMines()[0].getPosition(), closeEnemy.getPosition()) < Math.pow(game.getProperties().getMineExplosionParams().getRadius(), 3)
 					&& easyToGo(unit.getPosition(), game.getMines()[0].getPosition(), game)) {
 				aim.setX(game.getMines()[0].getPosition().getX() - unit.getPosition().getX());
-				aim.setY(game.getMines()[0].getPosition().getY() - unit.getPosition().getY() - 1);
-				action.setAim(aim);
+				aim.setY(game.getMines()[0].getPosition().getY() - unit.getPosition().getY() - 0.5);
 				action.setShoot(true);
 			}
 		} catch (Exception e) {
 
 		}
+
+		action.setJump(jump);
+		action.setJumpDown(jumpdown);
+		action.setAim(aim);
+
 		action.setReload(goodreload(unit, nearestEnemy, game));
 		action.setSwapWeapon((unit.getWeapon() != null && !unit.getWeapon().getTyp().equals(WeaponType.ROCKET_LAUNCHER)));
 		return action;
@@ -353,8 +367,8 @@ public class MyStrategy {
 
 
 				if ((int) other.getPosition().getX() == x && (int) other.getPosition().getY() == y) {
-					action.setJump(true);
 
+					return false;
 				}
 			}
 		}
@@ -371,7 +385,7 @@ public class MyStrategy {
 			}
 			if (game.getLevel().getTiles()[x][y] == Tile.WALL) {
 				if (unit.getWeapon() != null && unit.getWeapon().getTyp().equals(WeaponType.ROCKET_LAUNCHER) && Math.abs(xend - x) < 2 && Math.abs(yend - y) < 2
-						&& Math.sqrt(Math.pow(xstart - x, 2) + Math.pow(ystart - y, 2)) > unit.getWeapon().getParams().getExplosion().getRadius()) {
+						&& Math.sqrt(Math.pow(xstart - x, 2) + Math.pow(ystart - y, 2)) > 1 + unit.getWeapon().getParams().getExplosion().getRadius()) {
 
 				} else {
 					return false;
@@ -443,7 +457,7 @@ public class MyStrategy {
 
 	public boolean goodplace(int x, int y, Game game) {
 		try {
-			if (game.getLevel().getTiles()[x][y] != Tile.WALL && game.getLevel().getTiles()[x][y - 1] != Tile.WALL) {
+			if (game.getLevel().getTiles()[x][y] != Tile.WALL && game.getLevel().getTiles()[x][y - 1] != Tile.EMPTY) {
 				return true;
 			}
 			return false;
@@ -529,7 +543,7 @@ public class MyStrategy {
 		} else if (nearestEnemy.isOnGround()) {
 			return 0.45;
 		} else if (!nearestEnemy.getJumpState().isCanCancel()) {
-			return Double.compare(nearestEnemy.getJumpState().getSpeed(), 0)*0.45;
+			return Double.compare(nearestEnemy.getJumpState().getSpeed(), 0) * 0.45;
 		}
 		return 0;
 	}
