@@ -63,7 +63,7 @@ public class MyStrategy {
 		Vec2Double targetPos = unit.getPosition();
 		if (unit.getWeapon() == null && nearestWeapon != null) {
 			targetPos = nearestWeapon.getPosition();
-		} else if (nearestEnemy != null) {
+		} else if (unit.getWeapon() != null && nearestEnemy != null) {
 			targetPos = nearestEnemy.getPosition();
 		}
 		if (targetPos.getY() < unit.getPosition().getY() - 10) {
@@ -269,10 +269,30 @@ public class MyStrategy {
 			jump = false;
 			jumpdown = false;
 		}
-		if (nearestEnemy != null && easyToGo(unit.getPosition(), nearestEnemy.getPosition(), game) && unit.getHealth() >= 90 &&
-				unit.getWeapon() != null && (unit.getMines() > 1 || (unit.getMines() > 0 && unit.getWeapon().getTyp().equals(WeaponType.ROCKET_LAUNCHER)))) {
+		if (nearestEnemy != null && easyToGo(unit.getPosition(), nearestEnemy.getPosition(), game) && unit.getHealth() >= 50 &&
+				unit.getWeapon() != null && (unit.getMines() > 1 || (unit.getMines() > 0 && nearestEnemy.getHealth() <= 50)
+				|| (unit.getMines() > 0 && unit.getWeapon().getTyp().equals(WeaponType.ROCKET_LAUNCHER))
+				|| (nearestEnemy.getHealth() <= 50 && unit.getWeapon().getTyp().equals(WeaponType.ROCKET_LAUNCHER))
+		)) {
 			targetPos = nearestEnemy.getPosition();
 		}
+
+
+			try {
+				if (unit.getPosition().getX() >= targetPos.getX()) {
+					if (game.getLevel().getTiles()[(int)(targetPos.getX()+1)][(int)(targetPos.getY())].equals(Tile.JUMP_PAD)) {
+						targetPos.setX(targetPos.getX() - 0.44);
+					}
+				} else {
+					if (game.getLevel().getTiles()[(int)(targetPos.getX()-1)][(int)(targetPos.getY())].equals(Tile.JUMP_PAD)) {
+					targetPos.setX(targetPos.getX() + 0.44);
+					}
+				}
+			} catch (Exception e) {}
+
+
+
+
 		action.setVelocity(Double.compare(targetPos.getX() - unit.getPosition().getX(), 0) * 100);
 		if (nearestEnemy != null && avoidwalls(game, unit, aim) && goodaim(game, unit, nearestEnemy, action)) {
 			action.setShoot(true);
